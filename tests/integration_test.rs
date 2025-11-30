@@ -32,9 +32,11 @@ fn test_tcp_echo_lines() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let project_dir = temp_dir.path().join("test-echo-lines");
 
-    let mut read_mode = ReadModeTemplateCtx::default();
-    read_mode.is_lines = true;
-    read_mode.max_line_len = Some(8192);
+    let read_mode = ReadModeTemplateCtx {
+        is_lines: true,
+        max_line_len: Some(8192),
+        ..Default::default()
+    };
 
     let ctx = TcpEchoTemplateCtx {
         project_name: "test-echo-lines".to_string(),
@@ -53,9 +55,11 @@ fn test_tcp_echo_fixed_size() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let project_dir = temp_dir.path().join("test-echo-fixed");
 
-    let mut read_mode = ReadModeTemplateCtx::default();
-    read_mode.is_fixed_size = true;
-    read_mode.frame_size = Some(1024);
+    let read_mode = ReadModeTemplateCtx {
+        is_fixed_size: true,
+        frame_size: Some(1024),
+        ..Default::default()
+    };
 
     let ctx = TcpEchoTemplateCtx {
         project_name: "test-echo-fixed".to_string(),
@@ -73,11 +77,12 @@ fn test_tcp_echo_fixed_size() {
 fn test_tcp_echo_delimited() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let project_dir = temp_dir.path().join("test-echo-delimited");
-
-    let mut read_mode = ReadModeTemplateCtx::default();
-    read_mode.is_delimited = true;
-    read_mode.delim_byte = Some(10); // newline
-    read_mode.delim_max_len = Some(65535);
+    let read_mode = ReadModeTemplateCtx {
+        is_delimited: true,
+        delim_byte: Some(10), // newline
+        delim_max_len: Some(65535),
+        ..Default::default()
+    };
 
     let ctx = TcpEchoTemplateCtx {
         project_name: "test-echo-delimited".to_string(),
@@ -96,13 +101,16 @@ fn test_tcp_echo_length_prefixed() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let project_dir = temp_dir.path().join("test-echo-lp");
 
-    let mut read_mode = ReadModeTemplateCtx::default();
-    read_mode.is_length_prefixed = true;
-    read_mode.lp_len_bytes = Some(2);
-    read_mode.lp_big_endian = Some(true);
-    read_mode.lp_max_len = Some(65535);
-    read_mode.lp_parse_len_code =
-        "let frame_len: usize = u16::from_be_bytes([len_buf[0], len_buf[1]]) as usize;".to_string();
+    let read_mode = ReadModeTemplateCtx {
+        is_length_prefixed: true,
+        lp_len_bytes: Some(2),
+        lp_big_endian: Some(true),
+        lp_max_len: Some(65535),
+        lp_parse_len_code:
+            "let frame_len: usize = u16::from_be_bytes([len_buf[0], len_buf[1]]) as usize;"
+                .to_string(),
+        ..Default::default()
+    };
 
     let ctx = TcpEchoTemplateCtx {
         project_name: "test-echo-lp".to_string(),
@@ -121,9 +129,11 @@ fn test_tcp_worker_lines() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let project_dir = temp_dir.path().join("test-worker-lines");
 
-    let mut read_mode = ReadModeTemplateCtx::default();
-    read_mode.is_lines = true;
-    read_mode.max_line_len = Some(8192);
+    let read_mode = ReadModeTemplateCtx {
+        is_lines: true,
+        max_line_len: Some(8192),
+        ..Default::default()
+    };
 
     let ctx = TcpWorkerTemplateCtx {
         project_name: "test-worker-lines".to_string(),
@@ -144,9 +154,11 @@ fn test_tcp_worker_fixed_size() {
     let temp_dir = TempDir::new().expect("Failed to create temp directory");
     let project_dir = temp_dir.path().join("test-worker-fixed");
 
-    let mut read_mode = ReadModeTemplateCtx::default();
-    read_mode.is_fixed_size = true;
-    read_mode.frame_size = Some(512);
+    let read_mode = ReadModeTemplateCtx {
+        is_fixed_size: true,
+        frame_size: Some(512),
+        ..Default::default()
+    };
 
     let ctx = TcpWorkerTemplateCtx {
         project_name: "test-worker-fixed".to_string(),
