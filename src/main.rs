@@ -1,9 +1,9 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
+use netgen::http_axum::{self, HttpAxumCmd};
 use netgen::tcp_echo::{self, EchoCmd};
 use netgen::tcp_worker::{self, WorkerCmd};
-use netgen::http_axum::{self, HttpAxumCmd};
 
 #[derive(Parser, Debug)]
 #[command(

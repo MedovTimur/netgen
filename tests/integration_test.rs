@@ -2,10 +2,10 @@ use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
 
-use netgen::tcp_echo::{generate_tcp_echo_project, TcpEchoTemplateCtx};
-use netgen::tcp_worker::{generate_tcp_worker_project, TcpWorkerTemplateCtx};
 use netgen::http_axum::{generate_http_axum_project, HttpAxumTemplateCtx, RouteTemplate};
 use netgen::read_mode::ReadModeTemplateCtx;
+use netgen::tcp_echo::{generate_tcp_echo_project, TcpEchoTemplateCtx};
+use netgen::tcp_worker::{generate_tcp_worker_project, TcpWorkerTemplateCtx};
 
 /// Helper function to run cargo check on a generated project.
 fn cargo_check(project_dir: &Path) -> Result<(), String> {
@@ -43,8 +43,7 @@ fn test_tcp_echo_lines() {
         read_mode,
     };
 
-    generate_tcp_echo_project(&ctx, &project_dir)
-        .expect("Failed to generate TCP echo project");
+    generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
@@ -65,8 +64,7 @@ fn test_tcp_echo_fixed_size() {
         read_mode,
     };
 
-    generate_tcp_echo_project(&ctx, &project_dir)
-        .expect("Failed to generate TCP echo project");
+    generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
@@ -88,8 +86,7 @@ fn test_tcp_echo_delimited() {
         read_mode,
     };
 
-    generate_tcp_echo_project(&ctx, &project_dir)
-        .expect("Failed to generate TCP echo project");
+    generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
@@ -105,8 +102,7 @@ fn test_tcp_echo_length_prefixed() {
     read_mode.lp_big_endian = Some(true);
     read_mode.lp_max_len = Some(65535);
     read_mode.lp_parse_len_code =
-        "let frame_len: usize = u16::from_be_bytes([len_buf[0], len_buf[1]]) as usize;"
-            .to_string();
+        "let frame_len: usize = u16::from_be_bytes([len_buf[0], len_buf[1]]) as usize;".to_string();
 
     let ctx = TcpEchoTemplateCtx {
         project_name: "test-echo-lp".to_string(),
@@ -115,8 +111,7 @@ fn test_tcp_echo_length_prefixed() {
         read_mode,
     };
 
-    generate_tcp_echo_project(&ctx, &project_dir)
-        .expect("Failed to generate TCP echo project");
+    generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
@@ -139,8 +134,7 @@ fn test_tcp_worker_lines() {
         read_mode,
     };
 
-    generate_tcp_worker_project(&ctx, &project_dir)
-        .expect("Failed to generate TCP worker project");
+    generate_tcp_worker_project(&ctx, &project_dir).expect("Failed to generate TCP worker project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
@@ -163,8 +157,7 @@ fn test_tcp_worker_fixed_size() {
         read_mode,
     };
 
-    generate_tcp_worker_project(&ctx, &project_dir)
-        .expect("Failed to generate TCP worker project");
+    generate_tcp_worker_project(&ctx, &project_dir).expect("Failed to generate TCP worker project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
@@ -199,8 +192,7 @@ fn test_http_axum_basic() {
         db_max_connections: None,
     };
 
-    generate_http_axum_project(&ctx, &project_dir)
-        .expect("Failed to generate HTTP axum project");
+    generate_http_axum_project(&ctx, &project_dir).expect("Failed to generate HTTP axum project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
@@ -235,8 +227,7 @@ fn test_http_axum_with_database() {
         db_max_connections: Some(10),
     };
 
-    generate_http_axum_project(&ctx, &project_dir)
-        .expect("Failed to generate HTTP axum project");
+    generate_http_axum_project(&ctx, &project_dir).expect("Failed to generate HTTP axum project");
 
     // Note: This will fail cargo check if DATABASE_URL is not set,
     // but we can at least verify the code structure is correct
@@ -287,9 +278,7 @@ fn test_http_axum_multiple_methods() {
         db_max_connections: None,
     };
 
-    generate_http_axum_project(&ctx, &project_dir)
-        .expect("Failed to generate HTTP axum project");
+    generate_http_axum_project(&ctx, &project_dir).expect("Failed to generate HTTP axum project");
 
     cargo_check(&project_dir).expect("Generated project failed to compile");
 }
-

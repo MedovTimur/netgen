@@ -6,13 +6,9 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type")]
 pub enum YamlReadMode {
     #[serde(rename = "lines")]
-    Lines {
-        max_line_len: Option<usize>,
-    },
+    Lines { max_line_len: Option<usize> },
     #[serde(rename = "fixed_size")]
-    FixedSize {
-        frame_size: usize,
-    },
+    FixedSize { frame_size: usize },
     #[serde(rename = "delimited")]
     Delimited {
         /// Delimiter byte (0-255), e.g. 10 == '\n'

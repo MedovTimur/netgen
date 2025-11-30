@@ -69,9 +69,11 @@ impl From<TcpEchoYamlConfig> for TcpEchoTemplateCtx {
 impl From<&EchoCmd> for TcpEchoTemplateCtx {
     fn from(cli: &EchoCmd) -> Self {
         // CLI currently only supports lines mode.
-        let mut read_mode = ReadModeTemplateCtx::default();
-        read_mode.is_lines = true;
-        read_mode.max_line_len = cli.max_line_len;
+        let read_mode = ReadModeTemplateCtx {
+            is_lines: true,
+            max_line_len: cli.max_line_len,
+            ..Default::default()
+        };
 
         TcpEchoTemplateCtx {
             project_name: cli.name.clone(),
@@ -94,10 +96,7 @@ pub fn generate_tcp_echo_project(ctx: &TcpEchoTemplateCtx, out_dir: &Path) -> Re
         "cargo_toml",
         include_str!("../templates/tcp_echo/Cargo.toml.hbs"),
     )?;
-    hbs.register_template_string(
-        "main_rs",
-        include_str!("../templates/tcp_echo/main.rs.hbs"),
-    )?;
+    hbs.register_template_string("main_rs", include_str!("../templates/tcp_echo/main.rs.hbs"))?;
 
     let cargo_toml = hbs.render("cargo_toml", ctx)?;
     std::fs::write(out_dir.join("Cargo.toml"), cargo_toml)?;

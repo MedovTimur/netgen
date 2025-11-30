@@ -120,11 +120,7 @@ impl From<HttpAxumYamlConfig> for HttpAxumTemplateCtx {
 
         let (db_enabled, db_url_env, db_max_connections) = if let Some(db) = cfg.database {
             if db.enabled {
-                (
-                    true,
-                    Some(db.url_env),
-                    db.max_connections,
-                )
+                (true, Some(db.url_env), db.max_connections)
             } else {
                 (false, None, None)
             }
