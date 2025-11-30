@@ -1,0 +1,12 @@
+use axum::response::IntoResponse;
+{{#if db_enabled}}
+use axum::extract::State;
+use crate::AppState;
+{{/if}}
+
+{{#each routes}}
+pub async fn {{handler_name}}({{#if ../db_enabled}}State(_state): State<AppState>{{/if}}) -> impl IntoResponse {
+    "{{response}}"
+}
+
+{{/each}}

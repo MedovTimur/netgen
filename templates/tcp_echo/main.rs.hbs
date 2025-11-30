@@ -1,0 +1,276 @@
+use std::net::SocketAddr;
+
+use anyhow::Result;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{TcpListener, TcpStream};
+
+{{#if tracing_enabled}}
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+{{/if}}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    {{#if tracing_enabled}}
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "info".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+    {{/if}}
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], {{port}}));
+    let listener = TcpListener::bind(addr).await?;
+    {{#if tracing_enabled}}
+    tracing::info!("TCP echo server listening on {}", addr);
+    {{else}}
+    println!("TCP echo server listening on {}", addr);
+    {{/if}}
+
+    loop {
+        let (socket, peer_addr) = listener.accept().await?;
+        {{#if tracing_enabled}}
+        tracing::info!("accepted connection from {}", peer_addr);
+        {{else}}
+        println!("accepted connection from {}", peer_addr);
+        {{/if}}
+
+        tokio::spawn(async move {
+            if let Err(err) = handle_client(socket, peer_addr).await {
+                {{#if tracing_enabled}}
+                tracing::warn!("error handling client {}: {:?}", peer_addr, err);
+                {{else}}
+                eprintln!("error handling client {}: {:?}", peer_addr, err);
+                {{/if}}
+            }
+        });
+    }
+}
+
+{{!-- ===== read_mode = lines ===== --}}
+{{#if is_lines}}
+async fn handle_client(
+    socket: TcpStream,
+    peer_addr: SocketAddr,
+) -> Result<()> {
+    let (reader, mut writer) = socket.into_split();
+    let mut reader = BufReader::new(reader);
+    let mut buf = String::new();
+
+    loop {
+        buf.clear();
+        let n = reader.read_line(&mut buf).await?;
+        if n == 0 {
+            {{#if tracing_enabled}}
+            tracing::info!("client {} disconnected", peer_addr);
+            {{else}}
+            println!("client {} disconnected", peer_addr);
+            {{/if}}
+            break;
+        }
+
+        {{#if max_line_len}}
+        if buf.len() > {{max_line_len}} {
+            {{#if tracing_enabled}}
+            tracing::warn!(
+                "line from {} exceeded max_len = {}, truncating",
+                peer_addr,
+                {{max_line_len}}
+            );
+            {{else}}
+            eprintln!(
+                "line from {} exceeded max_len = {}, truncating",
+                peer_addr,
+                {{max_line_len}}
+            );
+            {{/if}}
+            buf.truncate({{max_line_len}});
+        }
+        {{/if}}
+
+        writer.write_all(buf.as_bytes()).await?;
+    }
+
+    Ok(())
+}
+{{/if}}
+
+{{!-- ===== read_mode = fixed_size ===== --}}
+{{#if is_fixed_size}}
+async fn handle_client(
+    socket: TcpStream,
+    peer_addr: SocketAddr,
+) -> Result<()> {
+    use std::io::ErrorKind;
+
+    let (mut reader, mut writer) = socket.into_split();
+    let mut buf = vec![0u8; {{frame_size}}];
+
+    loop {
+        match reader.read_exact(&mut buf).await {
+            Ok(_) => {
+                writer.write_all(&buf).await?;
+            }
+            Err(err) => {
+                match err.kind() {
+                    ErrorKind::UnexpectedEof => {
+                        {{#if tracing_enabled}}
+                        tracing::info!("client {} disconnected (EOF)", peer_addr);
+                        {{else}}
+                        println!("client {} disconnected (EOF)", peer_addr);
+                        {{/if}}
+                    }
+                    _ => {
+                        {{#if tracing_enabled}}
+                        tracing::warn!(
+                            "client {} error during read_exact: {:?}",
+                            peer_addr,
+                            err
+                        );
+                        {{else}}
+                        eprintln!(
+                            "client {} error during read_exact: {:?}",
+                            peer_addr,
+                            err
+                        );
+                        {{/if}}
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    Ok(())
+}
+{{/if}}
+
+{{!-- ===== read_mode = delimited ===== --}}
+{{#if is_delimited}}
+async fn handle_client(
+    socket: TcpStream,
+    peer_addr: SocketAddr,
+) -> Result<()> {
+    let (reader, mut writer) = socket.into_split();
+    let mut reader = BufReader::new(reader);
+    let mut buf = Vec::new();
+    let delim: u8 = {{delim_byte}};
+
+    loop {
+        buf.clear();
+        let n = reader.read_until(delim, &mut buf).await?;
+        if n == 0 {
+            {{#if tracing_enabled}}
+            tracing::info!("client {} disconnected", peer_addr);
+            {{else}}
+            println!("client {} disconnected", peer_addr);
+            {{/if}}
+            break;
+        }
+
+        {{#if delim_max_len}}
+        if buf.len() > {{delim_max_len}} {
+            {{#if tracing_enabled}}
+            tracing::warn!(
+                "frame from {} exceeded max_len = {}, truncating",
+                peer_addr,
+                {{delim_max_len}}
+            );
+            {{else}}
+            eprintln!(
+                "frame from {} exceeded max_len = {}, truncating",
+                peer_addr,
+                {{delim_max_len}}
+            );
+            {{/if}}
+            buf.truncate({{delim_max_len}});
+        }
+        {{/if}}
+
+        writer.write_all(&buf).await?;
+    }
+
+    Ok(())
+}
+{{/if}}
+
+{{!-- ===== read_mode = length_prefixed ===== --}}
+{{#if is_length_prefixed}}
+async fn handle_client(
+    socket: TcpStream,
+    peer_addr: SocketAddr,
+) -> Result<()> {
+    let (mut reader, mut writer) = socket.into_split();
+
+    loop {
+        let mut len_buf = vec![0u8; {{lp_len_bytes}}];
+
+        if let Err(err) = reader.read_exact(&mut len_buf).await {
+            {{#if tracing_enabled}}
+            tracing::info!(
+                "client {} disconnected while reading length: {:?}",
+                peer_addr,
+                err
+            );
+            {{else}}
+            println!(
+                "client {} disconnected while reading length: {:?}",
+                peer_addr,
+                err
+            );
+            {{/if}}
+            break;
+        }
+
+        {{lp_parse_len_code}}
+ 
+        if frame_len == 0 {
+            continue;
+        }
+
+        {{#if lp_max_len}}
+        if frame_len > {{lp_max_len}} {
+            {{#if tracing_enabled}}
+            tracing::warn!(
+                "frame from {} has len={} exceeding max_len={}, closing",
+                peer_addr,
+                frame_len,
+                {{lp_max_len}}
+            );
+            {{else}}
+            eprintln!(
+                "frame from {} has len={} exceeding max_len={}, closing",
+                peer_addr,
+                frame_len,
+                {{lp_max_len}}
+            );
+            {{/if}}
+            break;
+        }
+        {{/if}}
+
+        let mut buf = vec![0u8; frame_len];
+        if let Err(err) = reader.read_exact(&mut buf).await {
+            {{#if tracing_enabled}}
+            tracing::info!(
+                "client {} disconnected while reading frame: {:?}",
+                peer_addr,
+                err
+            );
+            {{else}}
+            println!(
+                "client {} disconnected while reading frame: {:?}",
+                peer_addr,
+                err
+            );
+            {{/if}}
+            break;
+        }
+
+        writer.write_all(&buf).await?;
+    }
+
+    Ok(())
+}
+{{/if}}

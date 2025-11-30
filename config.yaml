@@ -1,0 +1,32 @@
+project_name: tcp-echo-fixed
+port: 4001
+tracing: false
+read_mode:
+  type: fixed_size
+  frame_size: 1024
+out_dir: ./tcp-echo-fixed
+
+# project_name: tcp-echo-lp
+# port: 4003
+# tracing: true
+# read_mode:
+#   type: length_prefixed
+#   len_bytes: 2       # 1, 2, or 4
+#   big_endian: true   # true = BE, false = LE
+#   max_len: 65535     # optional
+# out_dir: ./tcp-echo-lp
+
+
+# project_name: tcp-worker-lines
+# port: 5000
+# tracing: true
+# workers: 4          # number of workers in pool
+# event_buffer: 1024  # size of MPSC buffer for events
+
+# read_mode:
+#   type: lines
+#   max_line_len: 8192   # optional, can be omitted
+
+# # Where to place the generated project
+# out_dir: ./tcp-worker-lines
+

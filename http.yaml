@@ -1,0 +1,22 @@
+project_name: my-axum-service
+port: 3000
+tracing: true
+
+routes:
+  - path: /
+    method: GET
+    handler: root
+    response: "Hello from Axum with DB!"
+
+  - path: /health
+    method: GET
+    handler: health
+    response: "OK"
+
+out_dir: ./my-axum-service
+
+database:
+  enabled: true
+  kind: postgres          # currently doesn't affect anything, just info
+  url_env: DATABASE_URL   # environment variable name
+  max_connections: 10

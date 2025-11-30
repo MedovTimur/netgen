@@ -1,0 +1,84 @@
+use std::net::SocketAddr;
+
+use anyhow::Result;
+use axum::{
+    routing::{get, post, put, delete},
+    Router,
+};
+
+{{#if tracing_enabled}}
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+{{/if}}
+
+{{#if db_enabled}}
+use sqlx::postgres::PgPoolOptions;
+{{/if}}
+
+mod handlers;
+
+#[derive(Clone)]
+struct AppState {
+    {{#if db_enabled}}
+    db: sqlx::PgPool,
+    {{/if}}
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    {{#if tracing_enabled}}
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "info".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+    {{/if}}
+
+    {{#if db_enabled}}
+    let state = AppState {
+        db: init_db().await?,
+    };
+    {{else}}
+    let state = AppState {};
+    {{/if}}
+
+    let app = Router::new()
+        {{#each routes}}
+        .route("{{path}}", {{method_fn}}(handlers::{{handler_name}})){{#if @last}};{{/if}}
+        {{/each}}
+
+    {{#if db_enabled}}
+    let app = app.with_state(state);
+    {{/if}}
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], {{port}}));
+    {{#if tracing_enabled}}
+    tracing::info!("HTTP axum server listening on {}", addr);
+    {{else}}
+    println!("HTTP axum server listening on {}", addr);
+    {{/if}}
+
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
+}
+
+{{#if db_enabled}}
+async fn init_db() -> Result<sqlx::PgPool> {
+    use std::env;
+
+    let url = env::var("{{db_url_env}}")
+        .unwrap_or_else(|_| panic!("env var {{db_url_env}} must be set"));
+
+    let pool = PgPoolOptions::new()
+        {{#if db_max_connections}}
+        .max_connections({{db_max_connections}})
+        {{/if}}
+        .connect(&url)
+        .await?;
+
+    Ok(pool)
+}
+{{/if}}
