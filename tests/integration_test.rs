@@ -43,6 +43,7 @@ fn test_tcp_echo_lines() {
         port: 4000,
         tracing_enabled: false,
         read_mode,
+        github_actions: false,
     };
 
     generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
@@ -66,6 +67,7 @@ fn test_tcp_echo_fixed_size() {
         port: 4001,
         tracing_enabled: true,
         read_mode,
+        github_actions: false,
     };
 
     generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
@@ -89,6 +91,7 @@ fn test_tcp_echo_delimited() {
         port: 4002,
         tracing_enabled: false,
         read_mode,
+        github_actions: false,
     };
 
     generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
@@ -117,6 +120,7 @@ fn test_tcp_echo_length_prefixed() {
         port: 4003,
         tracing_enabled: true,
         read_mode,
+        github_actions: false,
     };
 
     generate_tcp_echo_project(&ctx, &project_dir).expect("Failed to generate TCP echo project");
@@ -142,6 +146,7 @@ fn test_tcp_worker_lines() {
         workers: 4,
         event_buffer: 1024,
         read_mode,
+        github_actions: false,
     };
 
     generate_tcp_worker_project(&ctx, &project_dir).expect("Failed to generate TCP worker project");
@@ -167,6 +172,7 @@ fn test_tcp_worker_fixed_size() {
         workers: 2,
         event_buffer: 512,
         read_mode,
+        github_actions: false,
     };
 
     generate_tcp_worker_project(&ctx, &project_dir).expect("Failed to generate TCP worker project");
@@ -202,6 +208,9 @@ fn test_http_axum_basic() {
         db_enabled: false,
         db_url_env: None,
         db_max_connections: None,
+        docker_enabled: false, 
+        docker_compose_enabled: false,
+        github_actions_enabled: false,
     };
 
     generate_http_axum_project(&ctx, &project_dir).expect("Failed to generate HTTP axum project");
@@ -237,6 +246,9 @@ fn test_http_axum_with_database() {
         db_enabled: true,
         db_url_env: Some("DATABASE_URL".to_string()),
         db_max_connections: Some(10),
+        docker_enabled: false, 
+        docker_compose_enabled: false,
+        github_actions_enabled: false,
     };
 
     generate_http_axum_project(&ctx, &project_dir).expect("Failed to generate HTTP axum project");
@@ -288,6 +300,9 @@ fn test_http_axum_multiple_methods() {
         db_enabled: false,
         db_url_env: None,
         db_max_connections: None,
+        docker_enabled: false, 
+        docker_compose_enabled: false,
+        github_actions_enabled: false,
     };
 
     generate_http_axum_project(&ctx, &project_dir).expect("Failed to generate HTTP axum project");

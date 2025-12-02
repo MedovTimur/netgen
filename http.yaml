@@ -20,3 +20,8 @@ database:
   kind: postgres          # currently doesn't affect anything, just info
   url_env: DATABASE_URL   # environment variable name
   max_connections: 10
+
+infra:
+  docker: true
+  docker_compose: true
+  github_actions: true

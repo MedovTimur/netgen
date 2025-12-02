@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: {{project_name}}-app
+    ports:
+      - "{{port}}:{{port}}"
+    environment:
+      RUST_LOG: info
+      {{#if db_enabled}}
+      {{db_url_env}}: "postgres://postgres:postgres@db:5432/{{project_name}}"
+      {{/if}}
+    depends_on:
+      {{#if db_enabled}}
+      - db
+      {{/if}}
+
+  {{#if db_enabled}}
+  db:
+    image: postgres:16
+    container_name: {{project_name}}-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: {{project_name}}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  {{/if}}
+
+volumes:
+  db_data: {}

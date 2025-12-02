@@ -59,14 +59,21 @@ fn default_db_kind() -> String {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct InfraYamlConfig {
+    pub docker: bool,
+    pub docker_compose: bool,
+    pub github_actions: bool,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct HttpAxumYamlConfig {
     pub project_name: String,
     pub port: u16,
     pub tracing: bool,
     pub routes: Vec<HttpRouteYaml>,
     pub out_dir: Option<String>,
-    /// Optional database block.
     pub database: Option<DatabaseYamlConfig>,
+    pub infra: Option<InfraYamlConfig>,
 }
 
 /// Route as it appears in the template.
@@ -93,6 +100,11 @@ pub struct HttpAxumTemplateCtx {
     pub db_enabled: bool,
     pub db_url_env: Option<String>,
     pub db_max_connections: Option<u32>,
+
+    // ---- Infra ----
+    pub docker_enabled: bool,
+    pub docker_compose_enabled: bool,
+    pub github_actions_enabled: bool,
 }
 
 impl From<HttpAxumYamlConfig> for HttpAxumTemplateCtx {
@@ -128,6 +140,17 @@ impl From<HttpAxumYamlConfig> for HttpAxumTemplateCtx {
             (false, None, None)
         };
 
+        let (docker_enabled, docker_compose_enabled, github_actions_enabled) =
+            if let Some(infra) = cfg.infra {
+                (
+                    infra.docker,
+                    infra.docker_compose,
+                    infra.github_actions,
+                )
+            } else {
+                (false, false, false)
+            };
+
         HttpAxumTemplateCtx {
             project_name: cfg.project_name,
             port: cfg.port,
@@ -136,6 +159,9 @@ impl From<HttpAxumYamlConfig> for HttpAxumTemplateCtx {
             db_enabled,
             db_url_env,
             db_max_connections,
+            docker_enabled,
+            docker_compose_enabled,
+            github_actions_enabled,
         }
     }
 }
@@ -170,6 +196,38 @@ pub fn generate_http_axum_project(ctx: &HttpAxumTemplateCtx, out_dir: &Path) -> 
 
     let handlers_rs = hbs.render("handlers_rs", ctx)?;
     std::fs::write(src_dir.join("handlers.rs"), handlers_rs)?;
+
+    // Dockerfile
+    if ctx.docker_enabled {
+        hbs.register_template_string(
+            "dockerfile",
+            include_str!("../templates/http_axum/Dockerfile.hbs"),
+        )?;
+        let dockerfile = hbs.render("dockerfile", ctx)?;
+        std::fs::write(out_dir.join("Dockerfile"), dockerfile)?;
+    }
+
+    // docker-compose
+    if ctx.docker_compose_enabled {
+        hbs.register_template_string(
+            "docker_compose",
+            include_str!("../templates/http_axum/docker-compose.yml.hbs"),
+        )?;
+        let compose = hbs.render("docker_compose", ctx)?;
+        std::fs::write(out_dir.join("docker-compose.yml"), compose)?;
+    }
+
+    // GitHub Actions
+    if ctx.github_actions_enabled {
+        hbs.register_template_string(
+            "github_actions",
+            include_str!("../templates/ci.yml.hbs"),
+        )?;
+        let gha = hbs.render("github_actions", ctx)?;
+        let workflows_dir = out_dir.join(".github/workflows");
+        std::fs::create_dir_all(&workflows_dir)?;
+        std::fs::write(workflows_dir.join("ci.yml"), gha)?;
+    }
 
     Ok(())
 }

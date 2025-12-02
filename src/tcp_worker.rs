@@ -29,6 +29,7 @@ pub struct TcpWorkerYamlConfig {
     pub event_buffer: usize,
     pub read_mode: YamlReadMode,
     pub out_dir: Option<String>,
+    pub github_actions: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -42,6 +43,7 @@ pub struct TcpWorkerTemplateCtx {
     /// Everything related to read_mode is flattened to the top level.
     #[serde(flatten)]
     pub read_mode: ReadModeTemplateCtx,
+    pub github_actions: bool,
 }
 
 impl From<TcpWorkerYamlConfig> for TcpWorkerTemplateCtx {
@@ -55,6 +57,7 @@ impl From<TcpWorkerYamlConfig> for TcpWorkerTemplateCtx {
             workers: cfg.workers,
             event_buffer: cfg.event_buffer,
             read_mode,
+            github_actions: cfg.github_actions
         }
     }
 }
@@ -81,6 +84,18 @@ pub fn generate_tcp_worker_project(ctx: &TcpWorkerTemplateCtx, out_dir: &Path) -
 
     let main_rs = hbs.render("main_rs", ctx)?;
     std::fs::write(out_dir.join("src/main.rs"), main_rs)?;
+
+    // GitHub Actions
+    if ctx.github_actions {
+        hbs.register_template_string(
+            "github_actions",
+            include_str!("../templates/ci.yml.hbs"),
+        )?;
+        let gha = hbs.render("github_actions", ctx)?;
+        let workflows_dir = out_dir.join(".github/workflows");
+        std::fs::create_dir_all(&workflows_dir)?;
+        std::fs::write(workflows_dir.join("ci.yml"), gha)?;
+    }
 
     Ok(())
 }

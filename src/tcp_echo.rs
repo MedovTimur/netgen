@@ -25,6 +25,9 @@ pub struct EchoCmd {
     #[arg(long, default_value_t = false)]
     pub tracing: bool,
 
+    #[arg(long, default_value_t = false)]
+    pub github_actions: bool,
+
     #[arg(long)]
     pub max_line_len: Option<usize>,
 
@@ -39,6 +42,7 @@ pub struct TcpEchoYamlConfig {
     pub tracing: bool,
     pub read_mode: YamlReadMode,
     pub out_dir: Option<String>,
+    pub github_actions: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -51,6 +55,7 @@ pub struct TcpEchoTemplateCtx {
     /// is flattened to the top level for handlebars.
     #[serde(flatten)]
     pub read_mode: ReadModeTemplateCtx,
+    pub github_actions: bool,
 }
 
 impl From<TcpEchoYamlConfig> for TcpEchoTemplateCtx {
@@ -62,6 +67,7 @@ impl From<TcpEchoYamlConfig> for TcpEchoTemplateCtx {
             port: cfg.port,
             tracing_enabled: cfg.tracing,
             read_mode,
+            github_actions: cfg.github_actions
         }
     }
 }
@@ -80,6 +86,7 @@ impl From<&EchoCmd> for TcpEchoTemplateCtx {
             port: cli.port,
             tracing_enabled: cli.tracing,
             read_mode,
+            github_actions: cli.github_actions
         }
     }
 }
@@ -103,6 +110,18 @@ pub fn generate_tcp_echo_project(ctx: &TcpEchoTemplateCtx, out_dir: &Path) -> Re
 
     let main_rs = hbs.render("main_rs", ctx)?;
     std::fs::write(out_dir.join("src/main.rs"), main_rs)?;
+
+    // GitHub Actions
+    if ctx.github_actions {
+        hbs.register_template_string(
+            "github_actions",
+            include_str!("../templates/ci.yml.hbs"),
+        )?;
+        let gha = hbs.render("github_actions", ctx)?;
+        let workflows_dir = out_dir.join(".github/workflows");
+        std::fs::create_dir_all(&workflows_dir)?;
+        std::fs::write(workflows_dir.join("ci.yml"), gha)?;
+    }
 
     Ok(())
 }

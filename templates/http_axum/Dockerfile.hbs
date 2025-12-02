@@ -1,0 +1,38 @@
+# Stage 1: builder
+FROM rust:1.82 as builder
+
+WORKDIR /app
+
+#  Create a dummy project to cache dependencies
+RUN cargo new --bin app
+WORKDIR /app/app
+
+COPY Cargo.toml Cargo.lock ./
+RUN cargo build --release || true
+
+# Copy the rest of the code
+COPY . .
+
+RUN cargo build --release
+
+# Stage 2: runtime (min)
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# OpenSSL, ca-certificates (often needed sqlx/pg)
+RUN apt-get update \
+ && apt-get install -y ca-certificates libssl-dev pkg-config \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/app/target/release/{{project_name}} /usr/local/bin/{{project_name}}
+
+ENV RUST_LOG=info
+{{#if db_enabled}}
+# We expect {{db_url_env}} to be passed through env/docker-compose.
+ENV {{db_url_env}}=""
+{{/if}}
+
+EXPOSE {{port}}
+
+CMD ["/usr/local/bin/{{project_name}}"]

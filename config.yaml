@@ -1,6 +1,7 @@
 project_name: tcp-echo-fixed
 port: 4001
 tracing: false
+github_actions: true
 read_mode:
   type: fixed_size
   frame_size: 1024
